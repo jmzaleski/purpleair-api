@@ -9,12 +9,14 @@ p = PurpleAir(MATZ_KEY)
 
 # the day we want the data for..
 start_date = date(2024,10,24)
+#last day we want data for..
+end_date = date(2024,10,25)
 print("start date:", start_date)
-
+print("end date:", end_date)
 # just get all the data for that day, from 0:00 to 23:59 Mountain time
 time_zone = ZoneInfo('Canada/Mountain')
 start_time = datetime.combine(start_date, time(0, 0).replace(tzinfo=time_zone))
-end_time = datetime.combine(start_date, time(23, 59, 59).replace(tzinfo=time_zone))
+end_time = datetime.combine(end_date, time(23, 59, 59).replace(tzinfo=time_zone))
 data_fields = ('temperature','pm2.5_atm')
 
 print("Mountain Time start,end datetimes:",  start_time, end_time)
