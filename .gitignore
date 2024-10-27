@@ -1,0 +1,4 @@
+environment
+/venv
+/sensor_data.csv
+.vscode
