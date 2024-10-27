@@ -8,4 +8,4 @@ currently code hardcodes a date and fetches the data for that whole day, 0:00 to
 FYI, the timestamps in the returned CSV data are in unix epoch time format and refer to UTC.
 purpleair-log.xls shows how to convert the timestamps to excel time and chart.  
 
-
+works in google sheets too: https://docs.google.com/spreadsheets/d/1_daZIKzCiptYk0-mmFv5jgxVFiODE0h312t-qh_Ipgk/edit?usp=sharing
