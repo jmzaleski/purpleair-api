@@ -5,6 +5,8 @@ https://api.purpleair.com/#api-welcome
 
 currently code hardcodes a date and fetches the data for that whole day, 0:00 to 23:59 Mountain time. The returned CSV string is written into the file sensor_data.csv.
 
+newest version fetched data for all golden area sensors for two days and writes to csv on stdout.
+
 FYI, the timestamps in the returned CSV data are in unix epoch time format and refer to UTC.
 purpleair-log.xls shows how to convert the timestamps to excel time and chart.  
 

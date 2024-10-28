@@ -1,11 +1,21 @@
 from purpleair import PurpleAir
 from datetime import datetime, time, date
 from zoneinfo import ZoneInfo  # Python 3.9+
+from time import sleep
 
-MATZ_KEY = '9EC43FD3-93E0-11EF-A261-42010A80000F'
+# api throttling kicks in unless we  between requests
+DELAY = 1
+with open('API_KEY.txt') as f:
+    MATZ_KEY = f.read()
+    print("MATZ_KEY:", MATZ_KEY)
+
 OUR_SENSOR_ID = '100155'
+LATITUDE = 51.29780  # golden 7th and 7th ish
+LONGITUDE = -116.97246  
+DELTA = 0.2  # degrees.. delta of .005 finds just our house. .009 finds a few more
 
-p = PurpleAir(MATZ_KEY)
+p = PurpleAir(MATZ_KEY.strip())
+# Add these lines after creating PurpleAir instance
 
 # the day we want the data for..
 start_date = date(2024,10,24)
@@ -22,18 +32,109 @@ data_fields = ('temperature','pm2.5_atm')
 print("Mountain Time start,end datetimes:",  start_time, end_time)
 print("data fields:", data_fields)
 
-history_csv = p.get_sensor_history_csv(
-    sensor_index=OUR_SENSOR_ID,
-    fields=data_fields,
-    start_timestamp=start_time,
-    end_timestamp=end_time
+if False:
+    #debug code that got history_csv working
+    history_csv = p.get_sensor_history_csv(
+        sensor_index=OUR_SENSOR_ID,
+        fields=data_fields,
+        start_timestamp=start_time,
+        end_timestamp=end_time
+    )
+    #retuns a string containing the csv format data
+    print("history_csv:", history_csv)
+    with open('sensor_data.csv', 'w') as file:
+        file.write(history_csv)
+
+
+
+
+# query the sensors in the area +- delta degrees from the point
+sensors = p.get_sensors_data(    
+    max_age=0,
+    fields=('name','temperature','pm2.5_atm'),
+    location_type=0,
+    nwlat=LATITUDE+DELTA,
+    nwlng=LONGITUDE-DELTA,
+    selat=LATITUDE-DELTA,
+    selng=LONGITUDE+DELTA
 )
-#retuns a string containing the csv format data
-print("history_csv:", history_csv)
-with open('sensor_data.csv', 'w') as file:
-    file.write(history_csv)
+local_sensors_name = {}
+
+# save a map from sensor id to name
+for x in sensors["data"]:
+    local_sensors_name[x[0]] = (x[1])
+
+# print the map from sensor id to name
+for sid in local_sensors_name.keys():
+    print(sid,local_sensors_name[sid])
+
+# get the history for each sensor and build a map from timestamp to pmi25 directly
+timestamp_to_pmi_map_for_sensor = {}
+for sid in local_sensors_name.keys():
+    print("sleep " + str(DELAY) + " before getting history for sensor:", sid)
+    sleep(DELAY)
+    s_history = p.get_sensor_history(sensor_index=sid,fields=data_fields,start_timestamp=start_time,end_timestamp=end_time)
+    # Create map of timestamp -> pmi2.5 for this sensor
+    pmi_map_for_sensor = {}
+    if not s_history["data"]:
+        print("no data for sensor" + str(sid))
+        continue
+    for time_data in s_history["data"]:
+        timestamp, temp, pmi25 = time_data
+        pmi_map_for_sensor[timestamp] = pmi25
+    print("sensor" + str(sid), "timestamp_to_pmi_map_for_sensor", pmi_map_for_sensor)
+    timestamp_to_pmi_map_for_sensor[sid] = pmi_map_for_sensor
+
+# print the timestamp/pmi25 data for each sensor
+# Get all unique timestamps across all sensors, sorted chronologically
+merged_timestamps = sorted(
+    set(  # using set() to ensure uniqueness
+        timestamp 
+        for sensor_data in timestamp_to_pmi_map_for_sensor.values() 
+        for timestamp in sensor_data.keys()
+    )
+)
+#print("merged_timestamps:", merged_timestamps)
 import sys
+
+map_sid_to_time_data = {} # for each sensor maintain a map from time to pmi25 data
+for sid in timestamp_to_pmi_map_for_sensor.keys():
+    pmi25_data_for_time = {}
+    print("timestamp/pmi25 data for sensor" + str(sid), "{")
+    for timestamp in merged_timestamps:
+        if timestamp not in timestamp_to_pmi_map_for_sensor[sid]:
+            print("NO", timestamp, "in timestamp_to_pmi_map_for_sensor["+str(sid)+"]")
+            print("timestamp_to_pmi_map_for_sensor[sid]:",timestamp_to_pmi_map_for_sensor[sid])
+            sys.exit()
+            continue
+        else:
+            print(timestamp,timestamp_to_pmi_map_for_sensor[sid][timestamp])
+    print("} end time data for sensor" + str(sid))
+
+#no print out rows by timestamp column of pmi25 data for each sensor
+print("start data for all sensors {}")
+line = "timestamp"
+for sid in timestamp_to_pmi_map_for_sensor.keys():
+    line = line + ", " + str(sid)
+print(line)
+
+for timestamp in merged_timestamps:
+    line=str(timestamp)
+    for sid in timestamp_to_pmi_map_for_sensor.keys():
+        line = line + ", " + str(timestamp_to_pmi_map_for_sensor[sid][timestamp])
+    print(line)
+print("} end data for all sensors")
+
 sys.exit()
+
+
+
+# Print sensor information
+for sensor in sensors:
+    print(f"Sensor ID: {sensor['sensor_index']}")
+    print(f"Name: {sensor['name']}")
+    print(f"Distance: {sensor['distance']:0.2f} km")
+    print("---")
 
 ################# junk here on down #########################
 
