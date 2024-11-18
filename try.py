@@ -3,6 +3,7 @@ from datetime import datetime, time, date
 from zoneinfo import ZoneInfo  # Python 3.9+
 from time import sleep
 
+# See https://api.purpleair.com/
 # api throttling kicks in unless we  between requests
 DELAY = 1
 with open('API_KEY.txt') as f:
@@ -10,33 +11,41 @@ with open('API_KEY.txt') as f:
     print("MATZ_KEY:", MATZ_KEY)
 
 OUR_SENSOR_ID = '100155'
+#LOCATION_TYPE=0 #outside
 LATITUDE = 51.29780  # golden 7th and 7th ish
-LONGITUDE = -116.97246  
-DELTA = 0.2  # degrees.. delta of .005 finds just our house. .009 finds a few more
+LONGITUDE = -116.97246
+#DELTA = 0.2  # degrees.. delta of .005 finds just our house. .009 finds a few more
+
+# confluence climbing at 51.30610, -116.97414
+#LATITUDE = 51.3061  # CC
+#LONGITUDE = -116.97414 #CC
+DELTA = 0.005  # degrees.. delta of .005 finds just our house. .009 finds a few more
+LOCATION_TYPE=1 #inside maybe need to adjust the DATA_FIELDS for an inside sensor. pm2.5_cf_1
+DATA_FIELDS = ('temperature','pm2.5_cf_1') #this for indoor sensor
+#DATA_FIELDS = ('temperature','pm2.5_atm') #for outdoor sensor
 
 p = PurpleAir(MATZ_KEY.strip())
 # Add these lines after creating PurpleAir instance
 
 # the day we want the data for..
-start_date = date(2024,10,24)
+start_date = date(2024,2,17)
 #last day we want data for..
-end_date = date(2024,10,25)
+end_date = start_date # samedate(2024,11,17)
 print("start date:", start_date)
 print("end date:", end_date)
 # just get all the data for that day, from 0:00 to 23:59 Mountain time
 time_zone = ZoneInfo('Canada/Mountain')
 start_time = datetime.combine(start_date, time(0, 0).replace(tzinfo=time_zone))
 end_time = datetime.combine(end_date, time(23, 59, 59).replace(tzinfo=time_zone))
-data_fields = ('temperature','pm2.5_atm')
 
 print("Mountain Time start,end datetimes:",  start_time, end_time)
-print("data fields:", data_fields)
+print("data fields:", DATA_FIELDS)
 
 if False:
     #debug code that got history_csv working
     history_csv = p.get_sensor_history_csv(
         sensor_index=OUR_SENSOR_ID,
-        fields=data_fields,
+        fields=DATA_FIELDS,
         start_timestamp=start_time,
         end_timestamp=end_time
     )
@@ -52,7 +61,7 @@ if False:
 sensors = p.get_sensors_data(    
     max_age=0,
     fields=('name','temperature','pm2.5_atm'),
-    location_type=0,
+    location_type=LOCATION_TYPE,
     nwlat=LATITUDE+DELTA,
     nwlng=LONGITUDE-DELTA,
     selat=LATITUDE-DELTA,
@@ -73,7 +82,7 @@ timestamp_to_pmi_map_for_sensor = {}
 for sid in local_sensors_name.keys():
     print("sleep " + str(DELAY) + " before getting history for sensor:", sid)
     sleep(DELAY)
-    s_history = p.get_sensor_history(sensor_index=sid,fields=data_fields,start_timestamp=start_time,end_timestamp=end_time)
+    s_history = p.get_sensor_history(sensor_index=sid,fields=DATA_FIELDS,start_timestamp=start_time,end_timestamp=end_time)
     # Create map of timestamp -> pmi2.5 for this sensor
     pmi_map_for_sensor = {}
     if not s_history["data"]:
@@ -140,7 +149,7 @@ for sensor in sensors:
 
 history = p.get_sensor_history(
     sensor_index=OUR_SENSOR_ID,
-    fields=data_fields,
+    fields=DATA_FIELDS,
     start_timestamp=start_time,
     end_timestamp=end_time
 )
