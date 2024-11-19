@@ -4,6 +4,8 @@ from datetime import datetime, time, date
 from zoneinfo import ZoneInfo  # Python 3.9+
 from time import sleep
 import sys
+from time import strftime, localtime #time conversion
+
 
 # See https://api.purpleair.com/
 # api throttling kicks in unless we  between requests
@@ -45,7 +47,53 @@ history_csv = p.get_sensor_history_csv(
         end_timestamp=end_time
     )
 #retuns a string containing the csv format data
-print("history_csv:", history_csv)
+#print("history_csv:", history_csv)
 with open('sensor_data.csv', 'w') as file:
         file.write(history_csv)
+
+import pandas as pd
+import io
+
+# Convert the CSV string to a DataFrame
+pandas_data_frame = pd.read_csv(io.StringIO(history_csv))
+#print(pandas_data_frame.info())
+time_pmi = pandas_data_frame[["time_stamp","pm2.5_cf_1"]]
+#print(time_pmi.info())
+
+for index, row in time_pmi.iterrows():
+    #print(row['time_stamp'], row['pm2.5_cf_1'])
+    #print( strftime('%Y-%m-%d %H:%M:%S', localtime(row['time_stamp'])),row['pm2.5_cf_1'])
+    time = strftime('%H:%M:%S', localtime(row['time_stamp']))
+    pm25 = row['pm2.5_cf_1']
+    print(time,pm25)
+    #print( strftime('%H:%M:%S', localtime(row['time_stamp'])),row['pm2.5_cf_1'])
+    
+
+import matplotlib.pyplot as plt
+from matplotlib.dates import DateFormatter
+
+
+# Convert timestamp to datetime
+pandas_data_frame['datetime'] = pd.to_datetime(pandas_data_frame['time_stamp'], unit='s')
+pandas_data_frame = pandas_data_frame.sort_values('datetime')  # Sort by datetime
+
+# Create the plot
+plt.figure(figsize=(12, 6))
+plt.plot(pandas_data_frame['datetime'], pandas_data_frame['pm2.5_cf_1'], '-o')
+
+# Customize the plot
+plt.title('PM2.5 Levels Over Time')
+plt.xlabel('Time')
+plt.ylabel('PM2.5 (μg/m³)')
+plt.grid(True)
+
+# Format x-axis to show time nicely
+plt.gcf().autofmt_xdate()  # Rotate and align the tick labels
+plt.gca().xaxis.set_major_formatter(DateFormatter('%H:%M'))
+
+# Show the plot
+plt.tight_layout()
+plt.show()
+
+
 
