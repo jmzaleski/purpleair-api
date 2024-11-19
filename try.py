@@ -10,33 +10,33 @@ with open('API_KEY.txt') as f:
     MATZ_KEY = f.read()
     print("MATZ_KEY:", MATZ_KEY)
 
-OUR_SENSOR_ID = '100155'
-#LOCATION_TYPE=0 #outside
-LATITUDE = 51.29780  # golden 7th and 7th ish
-LONGITUDE = -116.97246
-#DELTA = 0.2  # degrees.. delta of .005 finds just our house. .009 finds a few more
-
-# confluence climbing at 51.30610, -116.97414
+#OUR_SENSOR_ID = '106786' #CC indoor sensor
 #LATITUDE = 51.3061  # CC
 #LONGITUDE = -116.97414 #CC
-DELTA = 0.005  # degrees.. delta of .005 finds just our house. .009 finds a few more
-LOCATION_TYPE=1 #inside maybe need to adjust the DATA_FIELDS for an inside sensor. pm2.5_cf_1
-DATA_FIELDS = ('temperature','pm2.5_cf_1') #this for indoor sensor
-#DATA_FIELDS = ('temperature','pm2.5_atm') #for outdoor sensor
+
+OUR_SENSOR_ID = '100155'
+LATITUDE = 51.29780  # golden 7th and 7th ish
+LONGITUDE = -116.97246  
+DELTA = 0.2  # degrees.. delta of .005 finds just our house. .009 finds a few more
+LOCATION_TYPE=0 #outside
+DATA_FIELDS = ('temperature','pm2.5_atm') #for outdoor sensor
+#LOCATION_TYPE=1 #inside maybe need to adjust the DATA_FIELDS for an inside sensor. pm2.5_cf_1
+#DATA_FIELDS = ('temperature','pm2.5_cf_1') #this for indoor sensor
 
 p = PurpleAir(MATZ_KEY.strip())
 # Add these lines after creating PurpleAir instance
 
 # the day we want the data for..
-start_date = date(2024,2,17)
+start_date = date(2024,10,24)
 #last day we want data for..
-end_date = start_date # samedate(2024,11,17)
+end_date = date(2024,10,25)
 print("start date:", start_date)
 print("end date:", end_date)
 # just get all the data for that day, from 0:00 to 23:59 Mountain time
 time_zone = ZoneInfo('Canada/Mountain')
 start_time = datetime.combine(start_date, time(0, 0).replace(tzinfo=time_zone))
 end_time = datetime.combine(end_date, time(23, 59, 59).replace(tzinfo=time_zone))
+data_fields = ('temperature','pm2.5_atm')
 
 print("Mountain Time start,end datetimes:",  start_time, end_time)
 print("data fields:", DATA_FIELDS)
